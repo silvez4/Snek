@@ -14,14 +14,20 @@ public class Movimento : MonoBehaviour
     [Header("Controle Sprites e Movimentação")]
     public bool MovendoHoriz;
     public bool MovendoVert;
+    public GameObject corpo;
+    private int tamanhoCobra = 0;
+    private List<Vector2Int> listaMovimentosCobra;
+    private List<Transform> listaTransforms;
     private void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-        tempomovMax = .3f;
+        tempomovMax = .2f; // de quanto em quanto tempo a cobra deve mover
         tempomov = tempomovMax;
         MovendoHoriz = true;
-        gridPos = Vector2Int.right;
-        transform.position += new Vector3 (0,0);
+        gridPos = Vector2Int.right; // inicar movendo para direta
+        transform.position += new Vector3 (0,0); // iniicar no meio do mapa
+        listaMovimentosCobra = new List<Vector2Int>();
+        listaTransforms = new List<Transform>();
     }
     private void Update() 
     {
@@ -32,15 +38,29 @@ public class Movimento : MonoBehaviour
         float x = Input.GetAxis("Horizontal");
         float y = Input.GetAxis("Vertical");
         gridPos = Mover(x,y);
+
+        if(listaMovimentosCobra.Count >= tamanhoCobra+1){
+            listaMovimentosCobra.RemoveAt(listaMovimentosCobra.Count-1);
+        }
     }
     private void ControleTempo(){
+        //limita o tempo que a cobra leva para mover;
          tempomov += Time.deltaTime;
         if(tempomov >= tempomovMax){
+            //movendo a cobra para nova posição e salvando esse "caminho" na lista
             transform.position += new Vector3 (gridPos.x,gridPos.y);
+            listaMovimentosCobra.Insert(0,new Vector2Int((int)transform.position.x,(int)transform.position.y));
+
+            for(int i=0; i<listaTransforms.Count;i++){
+                //movendo o corpo para a posição salva na lista
+                Vector3 posicaoCorpo = new Vector3(listaMovimentosCobra[i].x,listaMovimentosCobra[i].y);
+                listaTransforms[i].position = posicaoCorpo;
+            }
             tempomov -=tempomovMax;
         }
     }
     private Vector2Int Mover(float x, float y){
+        //limitar quais moventos podem ser realizados e fazer a rotação do sprite
         if(x>0 && MovendoVert){
             MovendoVert = false;
             MovendoHoriz = true;
@@ -73,5 +93,13 @@ public class Movimento : MonoBehaviour
         if(other.tag == "Wall"){
             Destroy(gameObject);
         }
+    }
+    public void pegouFruta(){
+        tamanhoCobra++;
+        criarCorpo();
+    }
+    private void criarCorpo(){
+        GameObject novoCorpo = Instantiate(corpo,gameObject.GetComponent<Transform>().position,Quaternion.identity);
+        listaTransforms.Add(novoCorpo.transform);
     }
 }
