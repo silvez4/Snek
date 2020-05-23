@@ -15,13 +15,13 @@ public class Movimento : MonoBehaviour
     public bool MovendoHoriz;
     public bool MovendoVert;
     public GameObject corpo;
-    private int tamanhoCobra = 0;
+    private int tamanhoCobra = 1;
     private List<Vector2Int> listaMovimentosCobra;
     private List<Transform> listaTransforms;
     private void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-        tempomovMax = .2f; // de quanto em quanto tempo a cobra deve mover
+        tempomovMax = .3f; // de quanto em quanto tempo a cobra deve mover
         tempomov = tempomovMax;
         MovendoHoriz = true;
         gridPos = Vector2Int.right; // inicar movendo para direta
@@ -93,6 +93,9 @@ public class Movimento : MonoBehaviour
         if(other.tag == "Wall"){
             Destroy(gameObject);
         }
+        if(other.tag == "Corpo"){
+            Destroy(gameObject);
+        }
     }
     public void pegouFruta(){
         tamanhoCobra++;
@@ -100,6 +103,16 @@ public class Movimento : MonoBehaviour
     }
     private void criarCorpo(){
         GameObject novoCorpo = Instantiate(corpo,gameObject.GetComponent<Transform>().position,Quaternion.identity);
+        if(this.tamanhoCobra <= 2){
+            novoCorpo.GetComponent<Collider2D>().enabled = false; // primeiro corpo que fica dentro da cabeça
+        }else{
+            novoCorpo.GetComponent<Collider2D>().enabled = false; // os seguites vem desativados para esperar mover
+            StartCoroutine(naoSeMatarAoGerarCorpo(novoCorpo));
+        }
         listaTransforms.Add(novoCorpo.transform);
+    }
+    IEnumerator naoSeMatarAoGerarCorpo(GameObject gerado){
+        yield return new WaitForSeconds(tempomovMax);
+        gerado.GetComponent<Collider2D>().enabled = true;
     }
 }
