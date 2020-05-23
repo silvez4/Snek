@@ -16,7 +16,7 @@ public class Movimento : MonoBehaviour
     public bool MovendoVert;
     public GameObject corpo;
     private int tamanhoCobra = 1;
-    private List<Vector2Int> listaMovimentosCobra;
+    public List<Vector2Int> listaMovimentosCobra;
     private List<Transform> listaTransforms;
     private void Start()
     {
