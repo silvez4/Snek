@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Spawner
   - Wall
+  - Corpo
   layers:
   - Default
   - TransparentFX

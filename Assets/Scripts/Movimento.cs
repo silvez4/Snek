@@ -9,6 +9,13 @@ public class Movimento : MonoBehaviour
     public Vector2Int gridPos;
     private float tempomov;
     private float tempomovMax;
+    private float dragDist;
+    float x,y;
+    private Vector2 inicioTouch, direcaoTouch;
+    public bool arrastandoDedo = false;
+
+    [Header("Funções Sobrecarregadas")]
+    public CanvasGroup canv;
 
     
     [Header("Controle Sprites e Movimentação")]
@@ -21,13 +28,16 @@ public class Movimento : MonoBehaviour
     private void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-        tempomovMax = .3f; // de quanto em quanto tempo a cobra deve mover
+        dragDist = Screen.height * 15/100;
+        canv = GameObject.Find("Canvas").GetComponent<CanvasGroup>();
+        tempomovMax = .2f; // de quanto em quanto tempo a cobra deve mover
         tempomov = tempomovMax;
         MovendoHoriz = true;
         gridPos = Vector2Int.right; // inicar movendo para direta
         transform.position += new Vector3 (0,0); // iniicar no meio do mapa
         listaMovimentosCobra = new List<Vector2Int>();
         listaTransforms = new List<Transform>();
+        listaTransforms.Add(this.transform);
     }
     private void Update() 
     {
@@ -35,13 +45,51 @@ public class Movimento : MonoBehaviour
         ControleTempo();
     }
     private void ControleMovimento(){
-        float x = Input.GetAxis("Horizontal");
-        float y = Input.GetAxis("Vertical");
-        gridPos = Mover(x,y);
+        #region Controles PC
+        //controle PC
+        // x = Input.GetAxis("Horizontal");
+        // y = Input.GetAxis("Vertical");
+        // gridPos = Mover(x,y);
+        #endregion
+        
+        #region ControlesMobile
+        if(Input.touches.Length >0){
+            if(Input.touches[0].phase == TouchPhase.Began){
+                arrastandoDedo = true;
+                inicioTouch = Input.touches[0].position;
+            }else if(Input.touches[0].phase == TouchPhase.Ended || Input.touches[0].phase == TouchPhase.Canceled){
+                arrastandoDedo = false;
+                Reset();
+            }
+        }
+        #endregion
+
+        //calcular distancia do toque
+        if(arrastandoDedo){
+            if(Input.touches.Length >0){
+                direcaoTouch = Input.touches[0].position - inicioTouch;
+            }else if (Input.GetMouseButton(0)){
+                direcaoTouch = (Vector2)Input.mousePosition - inicioTouch;
+            }
+        }
+        //calculando a deadzone do toque
+        if(direcaoTouch.magnitude > dragDist){
+            float x = direcaoTouch.x;
+            float y = direcaoTouch.y;
+            if(Mathf.Abs(x)> Mathf.Abs(y)){
+                y=0;
+            }else{
+                x=0;
+            }
+            gridPos = Mover(x,y);
+        }
 
         if(listaMovimentosCobra.Count >= tamanhoCobra+1){
             listaMovimentosCobra.RemoveAt(listaMovimentosCobra.Count-1);
         }
+    }
+    private void Reset() {
+        inicioTouch = direcaoTouch = Vector2.zero;    
     }
     private void ControleTempo(){
         //limita o tempo que a cobra leva para mover;
@@ -90,10 +138,10 @@ public class Movimento : MonoBehaviour
         }
     }
     private void OnTriggerEnter2D(Collider2D other) {
-        if(other.tag == "Wall"){
-            Destroy(gameObject);
-        }
-        if(other.tag == "Corpo"){
+        if(other.tag == "Wall" || other.tag == "Corpo"){
+            Destroy(GameObject.FindGameObjectWithTag("Spawner"));
+            canv.GetComponent<GameOver>().TelaGameOver();
+            canv.interactable = true;
             Destroy(gameObject);
         }
     }
@@ -103,12 +151,8 @@ public class Movimento : MonoBehaviour
     }
     private void criarCorpo(){
         GameObject novoCorpo = Instantiate(corpo,gameObject.GetComponent<Transform>().position,Quaternion.identity);
-        if(this.tamanhoCobra <= 2){
-            novoCorpo.GetComponent<Collider2D>().enabled = false; // primeiro corpo que fica dentro da cabeça
-        }else{
-            novoCorpo.GetComponent<Collider2D>().enabled = false; // os seguites vem desativados para esperar mover
-            StartCoroutine(naoSeMatarAoGerarCorpo(novoCorpo));
-        }
+        novoCorpo.GetComponent<Collider2D>().enabled = false; // os seguites vem desativados para esperar mover
+        StartCoroutine(naoSeMatarAoGerarCorpo(novoCorpo));
         listaTransforms.Add(novoCorpo.transform);
     }
     IEnumerator naoSeMatarAoGerarCorpo(GameObject gerado){
